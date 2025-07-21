@@ -1,4 +1,4 @@
-FROM postgres:14.4-alpine
+FROM postgres:17-alpine
 
 LABEL maintainer="Asror Zakirov <asror.zk@gmail.com>"
 
