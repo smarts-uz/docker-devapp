@@ -1,0 +1,339 @@
+version: '3.7'
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+
+volumes:
+  postgres:
+    driver: local
+  redis:
+    driver: local
+  mariadb:
+    driver: local
+  mongo:
+    driver: local
+  rabbitmq:
+    driver: local
+  netdata:
+    driver: local
+  portainer:
+    driver: local
+  nextcloud:
+    driver: local
+
+
+services:
+
+
+  ### php-fpm ##############################################
+
+  php-fpm:
+    restart: unless-stopped
+    build:
+      context: ./php-fpm
+    volumes:
+      - ./php-fpm/config:/usr/local/etc
+      - ${DIR_APP}:/var/www:${MOUNT}
+      - ${DIR_LOG}/php:/var/log/php
+    extra_hosts:
+      - "dockerhost:${DOCKER_HOST_IP}"
+    environment:
+      - PHP_IDE_CONFIG=serverName=asrorz
+      - DOCKER_HOST=tcp://docker-in-docker:2375
+      - FAKETIME=-0
+    networks:
+      - backend
+    links:
+      - docker-in-docker
+    stdin_open: true
+    tty: true
+
+
+  ### php-fpm2 ##############################################
+
+  php-fpm2:
+    restart: unless-stopped
+    build:
+      context: ./php-fpm2
+    volumes:
+      - ./php-fpm2/config:/usr/local/etc
+      - ${DIR_APP}:/var/www:${MOUNT}
+      - ${DIR_LOG}/php:/var/log/php
+    extra_hosts:
+      - "dockerhost:${DOCKER_HOST_IP}"
+    environment:
+      - PHP_IDE_CONFIG=serverName=asrorz
+      - DOCKER_HOST=tcp://docker-in-docker:2375
+      - FAKETIME=-0
+    networks:
+      - backend
+    links:
+      - docker-in-docker
+    stdin_open: true
+    tty: true
+
+
+
+
+  ### NGINX Server #########################################
+
+  nginx:
+    restart: unless-stopped
+    build:
+      context: ./nginx
+    volumes:
+      - ${DIR_APP}:/var/www:${MOUNT}
+      - ${DIR_LOG}/nginx:/var/log/nginx
+      - ${DIR_LOG}/nginx-certify:/var/log/nginx-certify
+      - ${DIR_LOG}/nginx-redirec:/var/log/nginx-redirec
+      - ${DIR_LOG}/nginx-vhosts:/var/log/nginx-vhosts
+      - ./nginx/config:/etc/nginx
+      - ./nginx/starts:/opt
+    ports:
+      - ${PortHttp}:80
+      - ${PortHttps}:443
+    networks:
+      - frontend
+      - backend
+    stdin_open: true
+    tty: true
+
+
+
+  ### SQUID
+  ##############################################
+
+  squid:
+    restart: unless-stopped
+    build: ./squid
+    volumes:
+      - ${DIR_LOG}/squid-cache:/var/spool/squid
+      - ${DIR_LOG}/squid:/var/log/squid
+      - ./squid/config:/etc/squid
+    ports:
+      - 8080:3128
+    networks:
+      - backend
+    stdin_open: true
+    tty: true
+
+
+
+  ### Mariadb Alpine
+  ##############################################
+
+  mariadb:
+    restart: unless-stopped
+    build: ./mariadb
+    volumes:
+      - mariadb:/var/lib/mysql
+      - ./mariadb/config:/etc/mysql
+      - ${DIR_LOG}/mariadb:/var/log/mysql
+    ports:
+      - 127.0.0.1:${PortMaria}:3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+    networks:
+      - backend
+    stdin_open: true
+    tty: true
+
+
+  ### PostgreSQL ###########################################
+  postgres:
+    restart: unless-stopped
+    build: ./postgres
+    volumes:
+      - postgres:/var/lib/postgresql/data
+      - ./postgres/config:/etc/postgres
+    command: postgres -c config_file=/etc/postgres/postgresql.conf
+    ports:
+      - 127.0.0.1:${PortPostgres}:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    networks:
+      - backend
+    stdin_open: true
+    tty: true
+
+
+
+  ### MongoDB ##############################################
+
+  mongo:
+    restart: unless-stopped
+    build: ./mongo
+    ports:
+      - 127.0.0.1:${PortMongo}:27017
+    volumes:
+      - mongo:/data/db
+    networks:
+      - backend
+    stdin_open: true
+    tty: true
+
+
+  ### Redis ################################################
+  redis:
+    restart: unless-stopped
+    build: ./redis
+    volumes:
+      - redis:/data
+    ports:
+      - 127.0.0.1:${PortRedis}:6379
+    networks:
+      - backend
+    stdin_open: true
+    tty: true
+
+
+  ### RabbitMQ #############################################
+  
+  rabbitmq:
+    restart: unless-stopped
+    build: ./rabbitmq
+    ports:
+      - 127.0.0.1:5672:5672
+      - 127.0.0.1:15672:15672
+      - 127.0.0.1:15671:15671
+    privileged: true
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    hostname: asrorz-rabbitmq
+    volumes:
+      - rabbitmq:/var/lib/rabbitmq
+    networks:
+      - backend
+    stdin_open: true
+    tty: true
+
+
+
+
+
+  ### Docker-in-Docker ################################################
+
+  docker-in-docker:
+    image: docker:dind
+    privileged: true
+    volumes:
+      - ${DIR_APP}:/var/www
+    expose:
+      - 2375
+    networks:
+      - backend
+    stdin_open: true
+    tty: true
+    
+
+
+
+  ### NetData ################################################
+  
+  netdata:
+    image: titpetric/netdata:latest
+    cap_add:
+      - SYS_PTRACE
+    volumes:
+      - netdata:/host
+    ports:
+      - 19999:19999
+    networks:
+      - backend
+    stdin_open: true
+    tty: true
+    
+
+
+  ### Portainer ################################################
+
+  portainer:
+    restart: unless-stopped
+    build:
+      context: ./portainer
+    volumes:
+      - portainer:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    extra_hosts:
+      - "dockerhost:${DOCKER_HOST_IP}"
+    ports:
+      - 9020:9000
+    networks:
+      - backend
+    stdin_open: true
+    tty: true
+
+
+
+
+
+  ### BLACKFIRE #############################################
+
+  # Create an account on blackfire.io. Don't enable blackfire and xDebug at the same time. # visit https://blackfire.io/docs/24-days/06-installation#install-probe-debian for more info.
+
+
+  ### Blackfire ########################################
+  
+  blackfire:
+    image: blackfire/blackfire
+    environment:
+      - BLACKFIRE_SERVER_ID=<server_id>
+      - BLACKFIRE_SERVER_TOKEN=<server_token>
+    networks:
+      - backend
+
+    stdin_open: true
+    tty: true
+
+
+
+  filerun-db:
+    image: mariadb:10.1
+    environment:
+      MYSQL_ROOT_PASSWORD: 12345678
+      MYSQL_USER: fruser
+      MYSQL_PASSWORD: 12345678
+      MYSQL_DATABASE: filerun
+    volumes:
+      - /filerun/db:/var/lib/mysql
+
+  filerun-web:
+    image: afian/filerun
+    environment:
+      FR_DB_HOST: filerun-db
+      FR_DB_PORT: 3306
+      FR_DB_USER: fruser
+      FR_DB_PASS: 12345678
+      FR_DB_NAME: filerun
+      APACHE_RUN_USER: www-data
+      APACHE_RUN_USER_ID: 33
+      APACHE_RUN_GROUP: www-data
+      APACHE_RUN_GROUP_ID: 33
+    depends_on:
+      - filerun-db
+    links:
+      - filerun-db:filerun-db
+    ports:
+      - "1080:80"
+    volumes:
+      - /filerun/html:/var/www/html
+      - /filerun/user-files:/user-files
+
+
+
+  nextcloud:
+    restart: unless-stopped
+    build:
+      context: ./nextcloud
+    ports:
+      - 8880:80
+    networks:
+      - backend
+    stdin_open: true
+    tty: true
+

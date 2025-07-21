@@ -1,0 +1,12 @@
+      - ./nextcloud/apps:/var/www/html/custom
+      - ./nextcloud/config:/var/www/html/config
+      - ./nextcloud/data:/var/www/html/data
+
+
+      - nextcloud:/var/www/html
+
+
+    environment:
+      - SQLITE_DATABASE=asrorz.db
+      - NEXTCLOUD_ADMIN_USER=asror
+      - NEXTCLOUD_ADMIN_PASSWORD=serverpass1234

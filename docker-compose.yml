@@ -1,0 +1,318 @@
+version: "3.8"
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+
+volumes:
+  postgres:
+    driver: local
+  redis:
+    driver: local
+  mysql:
+    driver: local
+  mariadb:
+    driver: local
+  netdata:
+    driver: local
+  portainer:
+    driver: local
+
+services:
+
+
+
+  ### eimzo #########################################
+
+  eimzo:
+    restart: unless-stopped
+    container_name: eimzo
+    build:
+      context: ./
+      dockerfile: ./eimzo/Dockerfile
+      args:
+        - ROOT_PASSWORD=${ROOT_PASSWORD}
+    volumes:
+      - ./eimzo/configs:/var/app
+    ports:
+      - "220:22"
+      - "780:80"
+      - "29090:9090"
+    extra_hosts:
+      - "e-imzo.uz:127.0.0.5"
+    environment:
+      - TSA_URL=http://e-imzo.uz/cams/tst
+      - TRUSTSTORE_FILE=/var/app/server/keys/truststore.jks
+      - TRUSTSTORE_PASSWORD=12345678
+      - JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF-8
+      - ROOT_PASSWORD=${ROOT_PASSWORD}
+      - TZ=Asia/Tashkent
+    networks:
+      - frontend
+      - backend
+    stdin_open: true
+    tty: true
+
+
+
+  ### Mariadb Alpine
+  ##############################################
+
+  mariadb:
+    restart: unless-stopped
+    container_name: mariadb
+    build:
+      context: ./
+      dockerfile: ./mariadb/Dockerfile
+      args:
+        - ROOT_PASSWORD=${ROOT_PASSWORD}
+    volumes:
+      - mariadb:/var/lib/mysql
+      - ${DIR_LOG}/mariadb:/var/log/mysql
+    ports:
+      - "222:22"
+      - "23306:3306"
+    environment:
+      - ROOT_PASSWORD=${ROOT_PASSWORD}
+      - MYSQL_PWD=${DB_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+      - TZ=Asia/Tashkent
+    networks:
+      - backend
+    stdin_open: true
+    tty: true
+
+
+
+  ###   Mariadb Alpine    ###   3
+  ##############################################
+
+  mysql:
+    restart: unless-stopped
+    container_name: mysql
+    build:
+      context: ./
+      dockerfile: ./mysql/Dockerfile
+      args:
+        - ROOT_PASSWORD=${ROOT_PASSWORD}
+    volumes:
+      - mysql:/var/lib/mysql
+      - ${DIR_LOG}/mysql:/var/log/mysql
+    ports:
+      - "223:22"
+      - "33306:3306"
+    environment:
+      - ROOT_PASSWORD=${ROOT_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+      - TZ=Asia/Tashkent
+    networks:
+      - backend
+    stdin_open: true
+    tty: true
+
+
+
+
+  ### NetData ################################################
+
+  netdata:
+    restart: unless-stopped
+    container_name: netdata
+    build:
+      context: ./
+      dockerfile: ./netdata/Dockerfile
+      args:
+        - ROOT_PASSWORD=${ROOT_PASSWORD}
+    cap_add:
+      - SYS_PTRACE
+    volumes:
+      - netdata:/host
+    ports:
+      - "39999:19999"
+    environment:
+      - ROOT_PASSWORD=${ROOT_PASSWORD}
+      - TZ=Asia/Tashkent
+    networks:
+      - backend
+    stdin_open: true
+    tty: true
+
+
+
+  ### NGINX Server #########################################
+
+  nginx:
+    restart: unless-stopped
+    container_name: nginx
+    build:
+      context: ./
+      dockerfile: ./nginx/Dockerfile
+      args:
+        - ROOT_PASSWORD=${ROOT_PASSWORD}
+    volumes:
+      - ${DIR_APP}:/var/www:${MOUNT}
+      - ${DIR_SSL}:/var/ssl:${MOUNT}
+      - ${DIR_LOG}/nginx:/var/log/nginx
+      - ./nginx/configs:/etc/nginx/configs
+      - ./nginx/configs/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - php
+    extra_hosts:
+      - "dockerhost:${DOCKER_HOST_IP}"
+    ports:
+      - "224:22"
+      - "${PORT_HTTP}:80"
+      - "${PORT_HTTPS}:443"
+    environment:
+      - ROOT_PASSWORD=${ROOT_PASSWORD}
+      - TZ=Asia/Tashkent
+    networks:
+      - frontend
+      - backend
+    stdin_open: true
+    tty: true
+
+
+
+  ### php ##############################################
+
+  php:
+    restart: unless-stopped
+    container_name: php
+    build:
+      context: ./
+      dockerfile: ./php/Dockerfile
+      args:
+        - ROOT_PASSWORD=${ROOT_PASSWORD}
+    volumes:
+      - ${DIR_APP}:/var/www:${MOUNT}
+      - ${DIR_LOG}/php:/var/log/php
+      - ${DIR_SSL}:/var/ssl:${MOUNT}
+      - ./php/configs/php.ini:/usr/local/etc/php/php.ini
+    extra_hosts:
+      - "dockerhost:${DOCKER_HOST_IP}"
+    environment:
+      - ROOT_PASSWORD=${ROOT_PASSWORD}
+      - PHP_IDE_CONFIG=serverName=asrorz
+      - FAKETIME=-0
+      - TZ=Asia/Tashkent
+    networks:
+      - backend
+    depends_on:
+      - mariadb
+      - postgres
+    ports:
+      - "225:22"
+      - "29000:9000"
+      - "6001:6001"
+    stdin_open: true
+    tty: true
+
+
+  ### Portainer ################################################
+
+  portainer:
+    restart: unless-stopped
+    container_name: portainer
+    build:
+      context: ./
+      dockerfile: ./portainer/Dockerfile
+      args:
+        - ROOT_PASSWORD=${ROOT_PASSWORD}
+    volumes:
+      - portainer:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    extra_hosts:
+      - "dockerhost:${DOCKER_HOST_IP}"
+    ports:
+      - "39000:9000"
+    environment:
+      - ROOT_PASSWORD=${ROOT_PASSWORD}
+      - TZ=Asia/Tashkent
+    networks:
+      - backend
+    stdin_open: true
+    tty: true
+
+
+
+  ### PostgreSQL ###########################################
+
+  postgres:
+    restart: unless-stopped
+    container_name: postgres
+    build:
+      context: ./
+      dockerfile: ./postgres/Dockerfile
+      args:
+        - ROOT_PASSWORD=${ROOT_PASSWORD}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    ports:
+      - "226:22"
+      - "25432:5432"
+    environment:
+      - ROOT_PASSWORD=${ROOT_PASSWORD}
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - TZ=Asia/Tashkent
+    networks:
+      - backend
+    stdin_open: true
+    tty: true
+
+
+
+  ### Redis ################################################
+  redis:
+    restart: unless-stopped
+    container_name: redis
+    build:
+      context: ./
+      dockerfile: ./redis/Dockerfile
+      args:
+        - ROOT_PASSWORD=${ROOT_PASSWORD}
+    volumes:
+      - redis:/data
+    ports:
+      - "227:22"
+      - "26379:6379"
+    environment:
+      - ROOT_PASSWORD=${ROOT_PASSWORD}
+      - TZ=Asia/Tashkent
+    networks:
+      - backend
+    stdin_open: true
+    tty: true
+
+
+
+
+
+
+  ### git #########################################
+
+  git:
+    restart: unless-stopped
+    container_name: git
+    build:
+      context: ./
+      dockerfile: ./git/Dockerfile
+      args:
+        - ROOT_PASSWORD=${ROOT_PASSWORD}
+    volumes:
+      - ${DIR_APP}:/var/www:${MOUNT}
+    ports:
+      - "228:22"
+    environment:
+      - ROOT_PASSWORD=${ROOT_PASSWORD}
+      - TZ=Asia/Tashkent
+    networks:
+      - frontend
+      - backend
+    stdin_open: true
+    tty: true

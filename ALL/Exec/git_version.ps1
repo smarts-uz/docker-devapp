@@ -1,0 +1,8 @@
+$root = $PSScriptRoot | Split-Path | Split-Path
+Set-Location $root
+"$($PSScriptRoot) | $($MyInvocation.MyCommand.Name)"
+
+$app = 'git'
+
+docker exec -i $app git -v
+
