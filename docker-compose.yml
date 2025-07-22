@@ -250,9 +250,10 @@ services:
         - ROOT_PASSWORD=${ROOT_PASSWORD}
     volumes:
       - postgres:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
       - "226:22"
-      - "25432:5432"
+      - "10101:5432"
     environment:
       - ROOT_PASSWORD=${ROOT_PASSWORD}
       - POSTGRES_USER=postgres
@@ -260,6 +261,8 @@ services:
       - POSTGRES_HOST_AUTH_METHOD=trust
       - PGDATA=/var/lib/postgresql/data/pgdata
       - TZ=Asia/Tashkent
+    command: >
+      postgres -c shared_preload_libraries='pg_stat_statements,pg_cron,pgaudit,http,pgcrypto,uuid-ossp'
     networks:
       - backend
     stdin_open: true
