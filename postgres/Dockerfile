@@ -11,6 +11,6 @@ ADD "./postgres/installs/configs.sh" "/configs.sh"
 RUN sh /installs.sh
 RUN sh /configs.sh
 
-COPY init.sql /docker-entrypoint-initdb.d/
+COPY ./postgres/init.sql /docker-entrypoint-initdb.d/init.sql
 
 EXPOSE 22

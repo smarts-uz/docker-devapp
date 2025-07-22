@@ -7,10 +7,5 @@ ENV ROOT_PASSWORD $ROOT_PASSWORD
 
 ENV PGRST_DB_URI $ROOT_PASSWORD
 
-ADD "./App/Ubuntu/installs.sh" "/installs.sh"
-ADD "./pgrest/installs/configs.sh" "/configs.sh"
-
-RUN sh /installs.sh
-RUN sh /configs.sh
 
 EXPOSE 22

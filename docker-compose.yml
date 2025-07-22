@@ -277,12 +277,15 @@ services:
       dockerfile: ./pgrest/Dockerfile
       args:
         - ROOT_PASSWORD=${ROOT_PASSWORD}
+    depends_on:
+      - postgres
     ports:
       - "230:22"
       - "23000:3000"
     environment:
       - ROOT_PASSWORD=${ROOT_PASSWORD}
-      - PGRST_DB_URI=postgres://authenticator:${ROOT_PASSWORD}@localhost:${PG_PORT}/${PG_DB_NAME}?parameters=val
+      - PGRST_DB_URI=postgres://postgres:myroot@postgres:5432/${PG_DB_NAME}
+      - PGRST_DB_ANON_ROLE=anon
       - TZ=Asia/Tashkent
     networks:
       - backend
