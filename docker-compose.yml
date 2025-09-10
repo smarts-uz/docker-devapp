@@ -259,36 +259,39 @@ services:
       - ROOT_PASSWORD=${ROOT_PASSWORD}
       - POSTGRES_USER=${PG_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
-      # - POSTGRES_HOST_AUTH_METHOD=${PG_AUTH_METHOD}
       - POSTGRES_DB=${PG_DB_NAME}
       - PGDATA=/var/lib/postgresql/data/pgdata
       - TZ=Asia/Tashkent
+      - POSTGRES_INITDB_ARGS=--auth-host=md5
+    # ✅ Command must not include YAML comments inline
     command: >
-      postgres -c shared_preload_libraries='pg_stat_statements,pg_cron,pgaudit,http,pgcrypto,uuid-ossp'
+      postgres
+      -c password_encryption=md5
+      -c shared_preload_libraries=pg_stat_statements,pg_cron,pgaudit,http,pgcrypto,uuid-ossp
     networks:
       - backend
     stdin_open: true
     tty: true
 
-  pgbouncer:
+  # PgBouncer for client applications (transaction pooling)
+  pgbouncer_tx:
     image: edoburu/pgbouncer:latest
-    container_name: pgbouncer
+    container_name: pgbouncer_tx
     restart: unless-stopped
     depends_on:
       - postgres
     ports:
-      - "${PGB_PORT}:5432"   # expose PgBouncer on host
+      - "${PGB_TX_PORT:-6432}:5432"   # expose PgBouncer TX pool on host
     environment:
       DB_USER: ${PG_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_HOST: postgres
       DB_PORT: 5432
-      MAX_CLIENT_CONN: ${PGB_MAX_CLIENT_CONN}
-      DEFAULT_POOL_SIZE: ${PGB_DEFAULT_POOL_SIZE}
-      POOL_MODE: ${PGB_POOL_MODE}
-      AUTH_TYPE: plain
-      ADMIN_USERS: postgres
-      IGNORE_STARTUP_PARAMETERS: extra_float_digits
+      AUTH_TYPE: md5
+      ADMIN_USERS: ${PG_USER}
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: ${PGB_MAX_CLIENT_CONN:-1000}
+      DEFAULT_POOL_SIZE: ${PGB_DEFAULT_POOL_SIZE:-20}
       LISTEN_ADDR: 0.0.0.0
       LISTEN_PORT: 5432
     networks:
@@ -296,6 +299,33 @@ services:
     stdin_open: true
     tty: true
 
+  # PgBouncer for PostgREST (session pooling)
+  pgbouncer_sess:
+    image: edoburu/pgbouncer:latest
+    container_name: pgbouncer_sess
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    ports:
+      - "${PGB_SESS_PORT:-7432}:5432"   # expose PgBouncer SESS pool on host
+    environment:
+      DB_USER: ${PG_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      AUTH_TYPE: md5
+      ADMIN_USERS: ${PG_USER}
+      POOL_MODE: session
+      MAX_CLIENT_CONN: ${PGB_MAX_CLIENT_CONN:-200}
+      DEFAULT_POOL_SIZE: ${PGB_DEFAULT_POOL_SIZE:-10}
+      LISTEN_ADDR: 0.0.0.0
+      LISTEN_PORT: 5432
+    networks:
+      - backend
+    stdin_open: true
+    tty: true
+
+  # PostgREST
   pgrest:
     restart: unless-stopped
     container_name: pgrest
@@ -305,13 +335,13 @@ services:
       args:
         - ROOT_PASSWORD=${ROOT_PASSWORD}
     depends_on:
-      - pgbouncer
+      - pgbouncer_sess
     ports:
       - "230:22"
       - "23000:3000"
     environment:
       - ROOT_PASSWORD=${ROOT_PASSWORD}
-      - PGRST_DB_URI=postgres://postgres:${DB_PASSWORD}@pgbouncer:5432/${PG_DB_NAME}
+      - PGRST_DB_URI=postgres://${PG_USER}:${DB_PASSWORD}@pgbouncer_sess:5432/${PG_DB_NAME}
       - PGRST_DB_ANON_ROLE=anon
       - TZ=Asia/Tashkent
     networks:
