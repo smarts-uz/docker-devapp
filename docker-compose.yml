@@ -342,7 +342,8 @@ services:
     environment:
       - ROOT_PASSWORD=${ROOT_PASSWORD}
       - PGRST_DB_URI=postgres://${PG_USER}:${DB_PASSWORD}@pgbouncer_sess:5432/${PG_DB_NAME}
-      - PGRST_DB_ANON_ROLE=anon
+      - PGRST_DB_ANON_ROLE=web_anon
+      - PGRST_JWT_SECRET=${PGRST_JWT_SECRET}
       - TZ=Asia/Tashkent
     networks:
       - backend
