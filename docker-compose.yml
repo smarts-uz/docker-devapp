@@ -1,4 +1,3 @@
-
 networks:
   frontend:
     driver: bridge
@@ -22,9 +21,6 @@ volumes:
     driver: local
 
 services:
-
-
-
   ### eimzo #########################################
 
   eimzo:
@@ -56,8 +52,6 @@ services:
     stdin_open: true
     tty: true
 
-
-
   ### Mariadb Alpine
   ##############################################
 
@@ -85,8 +79,6 @@ services:
     stdin_open: true
     tty: true
 
-
-
   ###   Mariadb Alpine    ###   3
   ##############################################
 
@@ -113,9 +105,6 @@ services:
     stdin_open: true
     tty: true
 
-
-
-
   ### NetData ################################################
 
   netdata:
@@ -139,8 +128,6 @@ services:
       - backend
     stdin_open: true
     tty: true
-
-
 
   ### NGINX Server #########################################
 
@@ -174,8 +161,6 @@ services:
       - backend
     stdin_open: true
     tty: true
-
-
 
   ### php ##############################################
 
@@ -211,7 +196,6 @@ services:
     stdin_open: true
     tty: true
 
-
   ### Portainer ################################################
 
   portainer:
@@ -237,36 +221,29 @@ services:
     stdin_open: true
     tty: true
 
-
-
   ### PostgreSQL ###########################################
 
   postgres:
     restart: unless-stopped
     container_name: postgres
     build:
-      context: ./ 
+      context: ./
       dockerfile: ./postgres/Dockerfile
-      args:
-        - ROOT_PASSWORD=${ROOT_PASSWORD}
     volumes:
       - postgres:/var/lib/postgresql/data
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
-      - "226:22"
-      - "${PG_PORT}:5432"   # expose Postgres directly
+      - "${PG_PORT}:5432" # expose Postgres directly
     environment:
-      - ROOT_PASSWORD=${ROOT_PASSWORD}
       - POSTGRES_USER=${PG_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${PG_DB_NAME}
       - PGDATA=/var/lib/postgresql/data/pgdata
       - TZ=Asia/Tashkent
-      - POSTGRES_INITDB_ARGS=--auth-host=md5
     # ✅ Command must not include YAML comments inline
     command: >
       postgres
-      -c password_encryption=md5
+      -c max_connections=${PG_MAX_CONNECTIONS:-100}
       -c shared_preload_libraries=pg_stat_statements,pg_cron,pgaudit,http,pgcrypto,uuid-ossp
     networks:
       - backend
@@ -275,13 +252,13 @@ services:
 
   # PgBouncer for client applications (transaction pooling)
   pgbouncer_tx:
-    image: edoburu/pgbouncer:latest
+    image: edoburu/pgbouncer:v1.24.1-p1
     container_name: pgbouncer_tx
     restart: unless-stopped
     depends_on:
       - postgres
     ports:
-      - "${PGB_TX_PORT:-6432}:5432"   # expose PgBouncer TX pool on host
+      - "${PGB_TX_PORT:-6432}:5432" # expose PgBouncer TX pool on host
     environment:
       DB_USER: ${PG_USER}
       DB_PASSWORD: ${DB_PASSWORD}
@@ -290,7 +267,7 @@ services:
       AUTH_TYPE: md5
       ADMIN_USERS: ${PG_USER}
       POOL_MODE: transaction
-      MAX_CLIENT_CONN: ${PGB_MAX_CLIENT_CONN:-1000}
+      MAX_CLIENT_CONN: ${PGB_MAX_CLIENT_CONN:-200}
       DEFAULT_POOL_SIZE: ${PGB_DEFAULT_POOL_SIZE:-20}
       LISTEN_ADDR: 0.0.0.0
       LISTEN_PORT: 5432
@@ -301,23 +278,22 @@ services:
 
   # PgBouncer for PostgREST (session pooling)
   pgbouncer_sess:
-    image: edoburu/pgbouncer:latest
+    image: edoburu/pgbouncer:v1.24.1-p1
     container_name: pgbouncer_sess
     restart: unless-stopped
     depends_on:
       - postgres
     ports:
-      - "${PGB_SESS_PORT:-7432}:5432"   # expose PgBouncer SESS pool on host
+      - "${PGB_SESS_PORT:-7432}:5432" # expose PgBouncer SESS pool on host
     environment:
       DB_USER: ${PG_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_HOST: postgres
       DB_PORT: 5432
-      AUTH_TYPE: md5
       ADMIN_USERS: ${PG_USER}
       POOL_MODE: session
       MAX_CLIENT_CONN: ${PGB_MAX_CLIENT_CONN:-200}
-      DEFAULT_POOL_SIZE: ${PGB_DEFAULT_POOL_SIZE:-10}
+      DEFAULT_POOL_SIZE: ${PGB_DEFAULT_POOL_SIZE:-20}
       LISTEN_ADDR: 0.0.0.0
       LISTEN_PORT: 5432
     networks:
@@ -329,16 +305,11 @@ services:
   pgrest:
     restart: unless-stopped
     container_name: pgrest
-    build:
-      context: ./ 
-      dockerfile: ./pgrest/Dockerfile
-      args:
-        - ROOT_PASSWORD=${ROOT_PASSWORD}
+    image: postgrest/postgrest:v13.0.4
     depends_on:
       - pgbouncer_sess
     ports:
-      - "230:22"
-      - "23000:3000"
+      - "${PGRST_PORT:-8000}:3000"
     environment:
       - ROOT_PASSWORD=${ROOT_PASSWORD}
       - PGRST_DB_URI=postgres://${PG_USER}:${DB_PASSWORD}@pgbouncer_sess:5432/${PG_DB_NAME}
@@ -349,8 +320,6 @@ services:
       - backend
     stdin_open: true
     tty: true
-
-
 
   ### Redis ################################################
   redis:
@@ -374,11 +343,6 @@ services:
     stdin_open: true
     tty: true
 
-
-
-
-
-
   ### git #########################################
 
   git:
@@ -401,7 +365,7 @@ services:
       - backend
     stdin_open: true
     tty: true
-  
+
   ### appsmith #########################################
   appsmith:
     image: komoliddin/appsmith-ce:1.0
@@ -419,5 +383,3 @@ services:
       - backend
     stdin_open: true
     tty: true
-
-
