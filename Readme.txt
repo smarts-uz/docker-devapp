@@ -12,3 +12,5 @@ docker compose up postgres pgrest pgbouncer_tx pgbouncer_sess node-proliga -d
 docker compose up node-proliga -d
 
 curl http://localhost:3030
+
+docker compose down -v
