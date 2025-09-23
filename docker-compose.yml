@@ -202,7 +202,7 @@ services:
       args:
         - ROOT_PASSWORD=${ROOT_PASSWORD}
     volumes:
-      - ./node-proliga/statics:/var/www/static
+      - ./node-proliga/statics:/app/static
     extra_hosts:
       - "dockerhost:${DOCKER_HOST_IP}"
     ports:
@@ -390,9 +390,11 @@ services:
 
   # PostgREST
   pgrest:
-    restart: unless-stopped
     container_name: pgrest
-    image: postgrest/postgrest:v13.0.4
+    build:
+      context: ./
+      dockerfile: ./pgrest/Dockerfile
+    restart: unless-stopped
     depends_on:
       - pgbouncer_sess
     ports:
