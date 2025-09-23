@@ -7,3 +7,8 @@ docker-compose up nginx-app -d
 docker-compose up nginx-app node-proliga  -d
 
 docker-compose rm --force --stop pgrest & docker-compose up pgrest -d
+
+docker compose up postgres pgrest pgbouncer_tx pgbouncer_sess node-proliga -d
+docker compose up node-proliga -d
+
+curl http://localhost:3030

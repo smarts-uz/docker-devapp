@@ -7,10 +7,12 @@ USER root
 ARG ROOT_PASSWORD
 ENV ROOT_PASSWORD $ROOT_PASSWORD
 
-ADD "./App/Alpine/installs.sh" "/installs.sh"
+COPY ./App/Alpine/installs.sh /installs.sh
+
 
 
 RUN sh /installs.sh
 
+USER appuser
+
 EXPOSE 22
-EXPOSE 3000
