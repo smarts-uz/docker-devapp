@@ -68,7 +68,7 @@ services:
       - ${DIR_LOG}/mariadb:/var/log/mysql
     ports:
       - "222:22"
-      - "23306:3306"
+      - "${MARIADB_PORT}:3306"
     environment:
       - ROOT_PASSWORD=${ROOT_PASSWORD}
       - MYSQL_PWD=${DB_PASSWORD}
