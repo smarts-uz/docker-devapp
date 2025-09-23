@@ -1,6 +1,0 @@
-# Docker-Compose uchun
-smarts git-app-pull
-
-# Projectlar uchun
-smarts git-pull
-
