@@ -19,4 +19,4 @@ docker compose up -d node-pay-proliga
 
 docker compose up -d postgres pgrest pgbouncer_tx pgbouncer_sess node-proliga node-pay-proliga appsmith nginx-app
 
-docker compose up -d nginx-app
+docker compose up -d nginx-app node-proliga
