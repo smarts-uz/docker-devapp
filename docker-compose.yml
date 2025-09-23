@@ -218,6 +218,29 @@ services:
     tty: true
 
 
+  node-pay-proliga:
+    restart: unless-stopped
+    container_name: node-pay-proliga
+    build:
+      context: ./
+      dockerfile: ./node-pay-proliga/Dockerfile
+      args:
+        - ROOT_PASSWORD=${ROOT_PASSWORD}
+    extra_hosts:
+      - "dockerhost:${DOCKER_HOST_IP}"
+    ports:
+      - "238:22"
+      - "3040:3000"
+    environment:
+      - ROOT_PASSWORD=${ROOT_PASSWORD}
+      - TZ=Asia/Tashkent
+    networks:
+      - frontend
+      - backend
+    stdin_open: true
+    tty: true
+
+
   node-lesaapp:
     restart: unless-stopped
     build:

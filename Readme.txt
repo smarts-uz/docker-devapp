@@ -14,3 +14,5 @@ docker compose up node-proliga -d
 curl http://localhost:3030
 
 docker compose down -v
+
+docker compose up -d node-pay-proliga
