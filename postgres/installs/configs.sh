@@ -2,10 +2,8 @@
 
 echo 'host all all 0.0.0.0/0 trust' >> /var/lib/postgresql/data/pg_hba.conf
 
-
-apt-get update && apt-get install -y \
-    postgresql-17-cron \
-    postgresql-17-http \
-    postgresql-17-pgaudit \
-    postgresql-contrib && \
-    rm -rf /var/lib/apt/lists/*
+apt-get -yqq update
+apt-get -y install postgresql-17-cron
+apt-get -y install postgresql-17-http 
+apt-get -y install postgresql-17-pgaudit 
+apt-get -y install postgresql-contrib
