@@ -1,0 +1,4 @@
+127.0.0.1      proliga.uz
+127.0.0.1      pay.proliga.uz
+127.0.0.1      api.proliga.uz
+127.0.0.1      app.smarts.uz
