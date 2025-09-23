@@ -16,3 +16,5 @@ curl http://localhost:3030
 docker compose down -v
 
 docker compose up -d node-pay-proliga
+
+docker compose up postgres pgrest pgbouncer_tx pgbouncer_sess node-proliga node-pay-proliga appsmith -d

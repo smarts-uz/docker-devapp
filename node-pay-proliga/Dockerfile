@@ -1,4 +1,4 @@
-FROM teamprodevs/proliga-payment:main
+FROM teamprodevs/proliga-payment:local
 
 LABEL maintainer="Asror Zakirov <asror.zk@gmail.com>"
 
