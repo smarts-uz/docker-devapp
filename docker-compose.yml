@@ -334,8 +334,10 @@ services:
 
   # PgBouncer for client applications (transaction pooling)
   pgbouncer_tx:
-    image: edoburu/pgbouncer:v1.24.1-p1
     container_name: pgbouncer_tx
+    build:
+      context: ./
+      dockerfile: ./pgbouncer/Dockerfile
     restart: unless-stopped
     depends_on:
       - postgres
@@ -360,8 +362,10 @@ services:
 
   # PgBouncer for PostgREST (session pooling)
   pgbouncer_sess:
-    image: edoburu/pgbouncer:v1.24.1-p1
     container_name: pgbouncer_sess
+    build:
+      context: ./
+      dockerfile: ./pgbouncer/Dockerfile
     restart: unless-stopped
     depends_on:
       - postgres
