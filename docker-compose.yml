@@ -175,8 +175,6 @@ services:
       - ${DIR_LOG}/nginx:/var/log/nginx
       - ./nginx-app/configs:/etc/nginx/configs
       - ./nginx-app/configs/nginx.conf:/etc/nginx/nginx.conf
-    depends_on:
-      - php
     extra_hosts:
       - "dockerhost:${DOCKER_HOST_IP}"
     ports:
