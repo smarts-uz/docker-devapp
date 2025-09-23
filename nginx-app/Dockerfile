@@ -5,11 +5,13 @@ LABEL maintainer="Asror Zakirov <asror.zk@gmail.com>"
 ARG ROOT_PASSWORD
 ENV ROOT_PASSWORD $ROOT_PASSWORD
 
+USER root
+
 ADD "./App/Alpine/installs.sh" "/installs.sh"
 ADD "./nginx/installs/configs.sh" "/configs.sh"
 
-
-
+RUN chmod +x /installs.sh
+RUN chmod +x /configs.sh
 
 RUN sh /installs.sh
 RUN sh /configs.sh
