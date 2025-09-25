@@ -243,8 +243,8 @@ services:
 
   node-lesaapp-api:
     build:
-      context: ./node-lesaapp-api   # loyihaning papkasi
-      dockerfile: Dockerfile
+      context: ./   # loyihaning papkasi
+      dockerfile: ./node-lesaapp-api/Dockerfile
     container_name: node-lesaapp-api
     restart: unless-stopped
     ports:
@@ -258,7 +258,9 @@ services:
       DB_PASSWORD: 8ZLVeB0RPRdMMFLbQXIN
       DB_NAME: lesaapp
       SERVER_API_URL: https://api.prolesa.uz
-
+    networks:
+    - frontend
+    - backend
 
 
   node-lesaapp:
