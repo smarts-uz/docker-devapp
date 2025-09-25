@@ -241,6 +241,25 @@ services:
     stdin_open: true
     tty: true
 
+  node-lesaapp-api:
+    build:
+      context: ./node-lesaapp-api   # loyihaning papkasi
+      dockerfile: Dockerfile
+    container_name: node-lesaapp-api
+    restart: unless-stopped
+    ports:
+      - "3022:3000"
+    volumes:
+      - ./node-lesaapp-api/static:/app/static
+    environment:
+      DB_HOST: 185.74.5.34
+      DB_PORT: 3306
+      DB_USER: lesaappuser
+      DB_PASSWORD: 8ZLVeB0RPRdMMFLbQXIN
+      DB_NAME: lesaapp
+      SERVER_API_URL: https://api.prolesa.uz
+
+
 
   node-lesaapp:
     restart: unless-stopped
