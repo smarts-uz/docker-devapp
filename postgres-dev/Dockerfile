@@ -1,4 +1,4 @@
-FROM postgres:17-bookworm
+FROM postgres:17
 
 LABEL maintainer="Asror Zakirov <asror.zk@gmail.com>"
 
@@ -14,6 +14,6 @@ RUN sh /configs.sh
 COPY ./postgres/init.sql /docker-entrypoint-initdb.d/init.sql
 
 RUN apt-get update -y && \
-    apt-get install -y postgresql-17 postgresql-17-cron postgresql-17-http postgresql-17-pgaudit postgresql-contrib
+    apt-get install -y postgresql-17 postgresql-17-cron postgresql-17-http postgresql-17-pgaudit postgresql-contrib postgresql-17-pldebugger
 
 EXPOSE 22
