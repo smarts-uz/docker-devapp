@@ -30,3 +30,5 @@ docker compose down -v nginx-app node-lesaapp-api
 
 docker compose up -d nginx-app node-lesaapp-api
 
+docker compose up -d postgres-dev
+
