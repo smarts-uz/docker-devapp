@@ -368,6 +368,10 @@ services:
       - POSTGRES_INITDB_ARGS=--auth-host=md5
     command: >
       postgres
+      -c max_connections=${PG_MAX_CONNECTIONS:-100}
+      -c password_encryption=md5
+      -c shared_preload_libraries=pg_stat_statements,pg_cron,pgaudit,http,pgcrypto,uuid-ossp
+      -c log_timezone='Asia/Tashkent'
       -c logging_collector=on
       -c log_directory='/var/log/postgresql'
       -c log_filename='postgresql-%Y-%m-%d.log'
@@ -577,7 +581,7 @@ services:
     container_name: grafana
     image: grafana/grafana:latest
     ports:
-      - "3001:3000"
+      - "3000:3000"
     environment:
       GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:-admin}
@@ -592,7 +596,7 @@ services:
     container_name: loki
     image: grafana/loki:2.9.2
     ports:
-      - "3100:3100"
+      - "31000:3100"
     volumes:
       - ./loki/loki-config.yaml:/etc/loki/local-config.yml
       - ./loki/logs:/loki
