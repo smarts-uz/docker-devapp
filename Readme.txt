@@ -55,3 +55,8 @@ docker compose up -d loki grafana promtail
 
 
 docker compose down -v loki grafana promtail
+
+
+docker compose up -d promtail
+
+docker compose down -v promtail

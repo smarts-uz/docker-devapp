@@ -17,3 +17,22 @@ scrape_configs:
           job: "postgres"
           environment: "docker"
           __path__: /var/log/postgresql/*.log
+
+    pipeline_stages:
+      # 🧩 1. Merge multi-line PostgreSQL logs (STATEMENT + CONTEXT + message)
+      - multiline:
+          firstline: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}'
+          max_wait_time: 3s
+
+      # 🧩 2. Extract timestamp, severity level, optional function name, and message
+      - regex:
+          expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}).* (LOG|NOTICE|WARNING|ERROR):(?P<message>.*)$'
+
+      # 🧩 3. Assign severity level as label
+      - labels:
+          level:
+          environment:
+
+      # 🧩 4. Output only the message text to Loki
+      - output:
+          source: message
