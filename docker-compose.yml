@@ -357,7 +357,7 @@ services:
     volumes:
       - postgres:/var/lib/postgresql/data
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-      - ./postgres/logs:/var/log/postgresql   # logs stored here
+      - ${DIR_LOG}/postgresql:/var/log/postgresql   # logs stored here
     ports:
       - "${PG_PORT}:5432"
     environment:
@@ -369,16 +369,15 @@ services:
       - POSTGRES_INITDB_ARGS=--auth-host=md5
     command: >
       postgres
-      -c max_connections=${PG_MAX_CONNECTIONS:-100}
-      -c password_encryption=md5
-      -c shared_preload_libraries=pg_stat_statements,pg_cron,pgaudit,http,pgcrypto,uuid-ossp
       -c logging_collector=on
       -c log_directory='/var/log/postgresql'
-      -c log_filename='postgresql.log'
-      -c log_statement=all
-      -c log_timezone='Asia/Tashkent'
-      -c log_rotation_age=0
-      -c log_rotation_size=0
+      -c log_filename='postgresql-%Y-%m-%d.log'
+      -c log_statement=none
+      -c log_min_messages=info
+      -c log_min_error_statement=error
+      -c log_line_prefix='{"time":"%t","user":"%u","db":"%d","app":"%a","pid":"%p","client":"%h"} '
+      -c log_rotation_age=1d
+      -c log_rotation_size=10MB
     networks:
       - backend
     stdin_open: true
@@ -562,3 +561,16 @@ services:
       - backend
     stdin_open: true
     tty: true
+  promtail:
+    build:
+      context: .
+      dockerfile: ./promtail/Dockerfile
+    container_name: promtail
+    depends_on:
+      - postgres
+    volumes:
+      - ${DIR_LOG}/postgresql:/var/log/postgresql:ro    # 🟢 Postgres loglarini o‘qiydi
+    ports:
+      - "9080:9080"
+    networks:
+      - backend
