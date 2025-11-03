@@ -34,4 +34,20 @@ docker compose up -d postgres-dev
 
 docker compose down postgres
 
+docker compose up -d pgrest
+docker compose up -d node-proliga
+
+
+docker compose down postgres-dev -v
+
 docker compose up -d postgres
+
+
+docker compose up -d loki grafana
+
+
+docker compose down -v loki grafana
+
+
+docker compose down loki grafana
+
