@@ -568,6 +568,8 @@ services:
       context: .
       dockerfile: ./promtail/Dockerfile
     container_name: promtail
+    environment:
+      - LOKI_URL=${LOKI_URL}
     depends_on:
       - postgres
     volumes:
@@ -596,7 +598,7 @@ services:
     container_name: loki
     image: grafana/loki:2.9.2
     ports:
-      - "31000:3100"
+      - "3100:3100"
     volumes:
       - ./loki/loki-config.yaml:/etc/loki/local-config.yml
       - ./loki/logs:/loki

@@ -43,7 +43,7 @@ docker compose down postgres-dev -v
 docker compose up -d postgres
 
 
-docker compose up -d loki grafana
+docker compose up -d loki grafana promtail
 
 
 docker compose down -v loki grafana
@@ -51,3 +51,7 @@ docker compose down -v loki grafana
 
 docker compose down loki grafana
 
+docker compose up -d loki grafana promtail
+
+
+docker compose down -v loki grafana promtail
