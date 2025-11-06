@@ -1,0 +1,258 @@
+# ===========================
+# PG Exporter Full Configuration
+# ===========================
+
+# ---------------------------
+# 1. Per-database metrics
+# ---------------------------
+pg_stat_database:
+  name: proliga_db
+  desc: "Per-database statistics"
+  query: |
+    SELECT
+      datname,
+      numbackends,
+      xact_commit,
+      xact_rollback,
+      blks_read,
+      blks_hit,
+      tup_inserted,
+      tup_updated,
+      tup_deleted,
+      conflicts
+    FROM pg_stat_database
+    WHERE datname NOT IN ('template0', 'template1')
+  ttl: 10
+  metrics:
+    - datname: {usage: LABEL}
+    - numbackends: {usage: GAUGE, description: "Current connections"}
+    - xact_commit: {usage: COUNTER, description: "Transactions committed"}
+    - xact_rollback: {usage: COUNTER, description: "Transactions rolled back"}
+    - blks_read: {usage: COUNTER, description: "Disk blocks read"}
+    - blks_hit: {usage: COUNTER, description: "Cache hits"}
+    - tup_inserted: {usage: COUNTER, description: "Tuples inserted"}
+    - tup_updated: {usage: COUNTER, description: "Tuples updated"}
+    - tup_deleted: {usage: COUNTER, description: "Tuples deleted"}
+    - conflicts: {usage: COUNTER, description: "Deadlock conflicts"}
+
+# ---------------------------
+# 2. Connection / activity
+# ---------------------------
+pg_stat_activity:
+  desc: "Database activity metrics"
+  query: |
+    SELECT 
+      state,
+      count(*) as total
+    FROM pg_stat_activity
+    WHERE pid != pg_backend_pid()
+    GROUP BY state
+  ttl: 1
+  metrics:
+    - state: {usage: LABEL}
+    - total: {usage: GAUGE, description: "Connections per state"}
+
+# ---------------------------
+# 3. Table bloat (expensive)
+# ---------------------------
+pg_table_bloat:
+  desc: "Table bloat metrics (expensive)"
+  query: |
+    SELECT 
+      schemaname,
+      tablename,
+      bs*tblpages as table_size,
+      bs*(tblpages - est_tblpages) as bloat_size
+    FROM pg_table_size_estimates()
+  ttl: 3600
+  metrics:
+    - schemaname: {usage: LABEL}
+    - tablename: {usage: LABEL}
+    - table_size: {usage: GAUGE, description: "Estimated table size in bytes"}
+    - bloat_size: {usage: GAUGE, description: "Estimated bloat in bytes"}
+
+# ---------------------------
+# 4. pg_stat_statements (query performance)
+# ---------------------------
+pg_stat_statements_metrics:
+  desc: "Query performance statistics"
+  tags: [extension:pg_stat_statements]
+  query: |
+    SELECT 
+      sum(calls) as total_calls,
+      sum(total_exec_time) as total_time,
+      sum(mean_exec_time * calls) / sum(calls) as mean_time
+    FROM pg_stat_statements
+  ttl: 60
+  metrics:
+    - total_calls: {usage: COUNTER}
+    - total_time: {usage: COUNTER, scale: 0.001}
+    - mean_time: {usage: GAUGE, scale: 0.001}
+
+# ---------------------------
+# 5. pg_cron (scheduled jobs)
+# ---------------------------
+pg_cron_jobs:
+  desc: "Scheduled job metrics"
+  tags: [extension:pg_cron]
+  query: |
+    SELECT 
+      jobid,
+      schedule,
+      active,
+      success
+    FROM cron.job
+  ttl: 60
+  metrics:
+    - jobid: {usage: LABEL}
+    - schedule: {usage: LABEL}
+    - active: {usage: GAUGE, description: "Job is active (1) or not (0)"}
+    - success: {usage: GAUGE, description: "Last job run success (1) or fail (0)"}
+
+# ---------------------------
+# 6. Optional expensive metrics
+# ---------------------------
+pg_indexes_size:
+  desc: "Indexes size per table"
+  query: |
+    SELECT 
+      schemaname,
+      tablename,
+      pg_indexes_size(schemaname || '.' || tablename) as index_size
+    FROM pg_stat_user_tables
+  ttl: 3600
+  metrics:
+    - schemaname: {usage: LABEL}
+    - tablename: {usage: LABEL}
+    - index_size: {usage: GAUGE, description: "Index size in bytes"}
+
+pg_table_size:
+  desc: "Total table size including indexes"
+  query: |
+    SELECT 
+      schemaname,
+      tablename,
+      pg_total_relation_size(schemaname || '.' || tablename) as total_size
+    FROM pg_stat_user_tables
+  ttl: 3600
+  metrics:
+    - schemaname: {usage: LABEL}
+    - tablename: {usage: LABEL}
+    - total_size: {usage: GAUGE, description: "Total table size in bytes"}
+
+# ---------------------------
+# 7. Connection poolers (pgBouncer example)
+# ---------------------------
+pgbouncer_stats:
+  desc: "pgBouncer connection pooler stats"
+  tags: [pgbouncer]
+  query: |
+    SHOW POOLS;
+  ttl: 10
+  metrics:
+    - database: {usage: LABEL}
+    - user: {usage: LABEL}
+    - cl_active: {usage: GAUGE}
+    - cl_waiting: {usage: GAUGE}
+    - sv_active: {usage: GAUGE}
+    - sv_idle: {usage: GAUGE}
+    - sv_used: {usage: GAUGE}
+    - maxwait: {usage: GAUGE}
+
+
+pg_replication:
+  desc: "Replication status"
+  query: |
+    SELECT
+      pid,
+      usename,
+      application_name,
+      client_addr,
+      state,
+      sync_priority,
+      sync_state
+    FROM pg_stat_replication
+  ttl: 10
+  metrics:
+    - pid: {usage: LABEL}
+    - usename: {usage: LABEL}
+    - application_name: {usage: LABEL}
+    - client_addr: {usage: LABEL}
+    - state: {usage: LABEL}
+    - sync_priority: {usage: GAUGE}
+    - sync_state: {usage: LABEL}
+
+pg_locks:
+  desc: "Active locks"
+  query: |
+    SELECT
+      relation::regclass as table_name,
+      mode,
+      granted
+    FROM pg_locks
+    WHERE NOT granted IS NULL
+  ttl: 5
+  metrics:
+    - table_name: {usage: LABEL}
+    - mode: {usage: LABEL}
+    - granted: {usage: GAUGE, description: "1 if granted, 0 otherwise"}
+
+pg_long_queries:
+  desc: "Long-running queries"
+  query: |
+    SELECT
+      pid,
+      now() - query_start as duration,
+      state,
+      query
+    FROM pg_stat_activity
+    WHERE state != 'idle' AND now() - query_start > interval '5 minutes'
+  ttl: 30
+  metrics:
+    - pid: {usage: LABEL}
+    - duration: {usage: GAUGE, scale: 0.001, description: "Query duration in seconds"}
+    - state: {usage: LABEL}
+    - query: {usage: LABEL}
+
+pg_index_usage:
+  desc: "Index usage statistics"
+  query: |
+    SELECT
+      schemaname,
+      relname as table_name,
+      indexrelname as index_name,
+      idx_scan,
+      idx_tup_read,
+      idx_tup_fetch
+    FROM pg_stat_user_indexes
+  ttl: 600
+  metrics:
+    - schemaname: {usage: LABEL}
+    - table_name: {usage: LABEL}
+    - index_name: {usage: LABEL}
+    - idx_scan: {usage: COUNTER, description: "Index scans"}
+    - idx_tup_read: {usage: COUNTER, description: "Tuples read via index"}
+    - idx_tup_fetch: {usage: COUNTER, description: "Tuples fetched via index"}
+
+pg_autovacuum:
+  desc: "Autovacuum statistics"
+  query: |
+    SELECT
+      relname,
+      last_vacuum,
+      last_autovacuum,
+      last_analyze,
+      last_autoanalyze
+    FROM pg_stat_user_tables
+  ttl: 600
+  metrics:
+    - relname: {usage: LABEL}
+    - last_vacuum: {usage: GAUGE, description: "Timestamp of last vacuum"}
+    - last_autovacuum: {usage: GAUGE, description: "Timestamp of last autovacuum"}
+    - last_analyze: {usage: GAUGE, description: "Timestamp of last analyze"}
+    - last_autoanalyze: {usage: GAUGE, description: "Timestamp of last autoanalyze"}
+
+
+# ===========================
+# End of full PG Exporter config
+# ===========================

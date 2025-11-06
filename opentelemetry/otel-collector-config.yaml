@@ -1,46 +1,97 @@
-# Receivers configuration - defines how the collector receives telemetry data
+# ========================================
+# OpenTelemetry Collector Configuration
+# ========================================
+
+# -----------------------
+# Receivers - how collector receives telemetry
+# -----------------------
 receivers:
-  # OpenTelemetry Protocol (OTLP) receiver configuration
+  # OTLP (Traces + Metrics) from your app
   otlp:
     protocols:
-      # gRPC endpoint for receiving OTLP data
       grpc:
         endpoint: "0.0.0.0:4317"
-      # HTTP endpoint for receiving OTLP data  
       http:
         endpoint: "0.0.0.0:4318"
 
-# Processors configuration - defines how telemetry data is processed
+  # Prometheus metrics from app or exporters
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: "otel-app"
+          scrape_interval: 10s
+          static_configs:
+            - targets: ["0.0.0.0:8888"]
+
+  # File-based logs
+  filelog:
+    include: ["/var/log/**/*.log"]
+    start_at: beginning
+
+# -----------------------
+# Processors - how telemetry is processed
+# -----------------------
 processors:
-  # Batch processor aggregates data before exporting
+  # Add attributes to all telemetry (traces, metrics, logs)
+  attributes:
+    actions:
+      - key: environment
+        value: production
+        action: insert
+
+  # Batch spans/metrics/logs to reduce overhead
   batch:
-    timeout: 1s # Maximum time to wait before sending a batch
-    send_batch_size: 1024 # Maximum number of spans to include in a batch
+    timeout: 1s
+    send_batch_size: 1024
 
-# Exporters configuration - defines where telemetry data is sent
+# -----------------------
+# Exporters - where to send telemetry
+# -----------------------
 exporters:
-  # Zipkin exporter configuration
+  # Traces: Zipkin
   zipkin:
-    endpoint: "http://zipkin:9411/api/v2/spans" # Zipkin server endpoint
-    format: proto # Use protobuf format for data
-  # Debug exporter for troubleshooting
-  debug:
-    verbosity: detailed # Maximum verbosity level for debugging
+    endpoint: "http://zipkin:9411/api/v2/spans"
+    format: proto
 
-# Extensions configuration - additional collector functionality
+  # Metrics: Prometheus endpoint
+  prometheus:
+    endpoint: "0.0.0.0:9464"
+
+  # Logs + Debug
+  debug:
+    verbosity: detailed
+
+# -----------------------
+# Extensions - optional functionality
+# -----------------------
 extensions:
-  health_check: # Enables health checking endpoint
-  pprof: # Enables profiling endpoint
+  health_check:    # Health endpoint
+  pprof:           # Profiling
     endpoint: :1888
-  zpages: # Enables diagnostic pages
+  zpages:          # Diagnostic pages
     endpoint: :55679
 
-# Service configuration - ties together all the components
+# -----------------------
+# Service - tie together receivers, processors, exporters
+# -----------------------
 service:
-  extensions: [pprof, zpages, health_check] # Enable all configured extensions
+  extensions: [pprof, zpages, health_check]
+
   pipelines:
-    # Traces pipeline configuration
+    # Traces pipeline
     traces:
-      receivers: [otlp] # Use OTLP receiver
-      processors: [batch] # Process with batch processor
-      exporters: [zipkin, debug] # Export to Zipkin and debug
+      receivers: [otlp]
+      processors: [batch, attributes]
+      exporters: [zipkin, debug]
+
+    # Metrics pipeline
+    metrics:
+      receivers: [prometheus, otlp]
+      processors: [batch, attributes]
+      exporters: [prometheus, debug]
+
+    # Logs pipeline
+    logs:
+      receivers: [filelog, otlp]
+      processors: [batch, attributes]
+      exporters: [debug]

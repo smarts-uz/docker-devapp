@@ -60,3 +60,5 @@ docker compose down -v loki grafana promtail
 docker compose up -d promtail
 
 docker compose down -v promtail
+
+$ docker compose up -d grafana loki otel-collector zipkin postgres_exporter cadvisor prometheus
