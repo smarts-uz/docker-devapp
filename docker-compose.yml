@@ -5,9 +5,13 @@ networks:
     driver: bridge
   monitoring:
     driver: bridge
+  dev: 
+    driver: bridge
 
 volumes:
   postgres:
+    driver: local
+  postgres_dev:
     driver: local
   redis:
     driver: local
@@ -386,42 +390,6 @@ services:
     stdin_open: true
     tty: true
 
-  postgres-dev:
-    restart: unless-stopped
-    container_name: postgres-dev
-    build:
-      context: ./
-      dockerfile: ./postgres-dev/Dockerfile
-    volumes:
-      - postgres:/var/lib/postgresql/data
-      - ./postgres-dev/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-      - ./postgres-dev/logs:/var/log/postgresql # logs stored here
-    ports:
-      - "${PG_PORT}:5432"
-    environment:
-      - POSTGRES_USER=${PG_USER}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${PG_DB_NAME}
-      - PGDATA=/var/lib/postgresql/data/pgdata
-      - TZ=Asia/Tashkent
-      - POSTGRES_INITDB_ARGS=--auth-host=md5
-    command: >
-      postgres
-      -c max_connections=${PG_MAX_CONNECTIONS:-100}
-      -c password_encryption=md5
-      -c shared_preload_libraries=pg_stat_statements,pg_cron,pgaudit,http,pgcrypto,uuid-ossp,plugin_debugger,pldbgapi
-      -c logging_collector=on
-      -c log_directory='/var/log/postgresql'
-      -c log_filename='postgresql.log'
-      -c log_statement=all
-      -c log_timezone='Asia/Tashkent'
-      -c log_rotation_age=0
-      -c log_rotation_size=0
-    networks:
-      - backend
-    stdin_open: true
-    tty: true
-
   # PgBouncer for client applications (transaction pooling)
   pgbouncer_tx:
     container_name: pgbouncer_tx
@@ -645,10 +613,10 @@ services:
     container_name: pg_exporter
     environment:
       # Change URL to pgBouncer for its metrics
-      PG_EXPORTER_URL:  ${DATABASE_URL}
+      PG_EXPORTER_URL: ${DATABASE_URL}
     ports:
       - "9630:9630"
     volumes:
-      - ./pg_exporter/pg_exporter.yml:/etc/pg_exporter.yml  # optional custom config
+      - ./pg_exporter/pg_exporter.yml:/etc/pg_exporter.yml # optional custom config
     networks:
       - monitoring
