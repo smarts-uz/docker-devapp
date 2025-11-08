@@ -1,4 +1,3 @@
-name: dev
 services:
   # PostgreSQL (dev)
   postgres_dev:
@@ -54,7 +53,7 @@ services:
     environment:
       DB_USER: ${PG_USER}
       DB_PASSWORD: ${DB_PASSWORD}
-      DB_HOST: postgres
+      DB_HOST: postgres_dev
       DB_PORT: 5432
       AUTH_TYPE: md5
       ADMIN_USERS: ${PG_USER}
@@ -82,7 +81,7 @@ services:
     environment:
       DB_USER: ${PG_USER}
       DB_PASSWORD: ${DB_PASSWORD}
-      DB_HOST: postgres
+      DB_HOST: postgres_dev
       DB_PORT: 5432
       AUTH_TYPE: md5
       ADMIN_USERS: ${PG_USER}
@@ -109,7 +108,7 @@ services:
       - "${PGRST_PORT_DEV:-9000}:3000"
     environment:
       - ROOT_PASSWORD=${ROOT_PASSWORD}
-      - PGRST_DB_URI=postgres://${PG_USER}:${DB_PASSWORD}@pgbouncer_sess:5432/${PG_DB_NAME}
+      - PGRST_DB_URI=postgres://${PG_USER}:${DB_PASSWORD}@pgbouncer_sess_dev:5432/${PG_DB_NAME}
       - PGRST_DB_ANON_ROLE=web_anon
       - PGRST_JWT_SECRET=${PGRST_JWT_SECRET}
       - TZ=Asia/Tashkent
