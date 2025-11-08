@@ -26,7 +26,7 @@ services:
       -c password_encryption=md5
       -c shared_preload_libraries=pg_stat_statements,pg_cron,pgaudit,http,pgcrypto,uuid-ossp
       -c log_timezone='Asia/Tashkent'
-      -c logging_collector=on
+      -c logging_collector=off
       -c log_directory='/var/log/postgresql'
       -c log_filename='postgresql-%Y-%m-%d.log'
       -c log_statement=none
