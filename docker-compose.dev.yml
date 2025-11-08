@@ -1,8 +1,7 @@
-version: "3.9"
-
+name: dev
 services:
   # PostgreSQL (dev)
-  postgres:
+  postgres_dev:
     container_name: postgres_dev
     build:
       context: ./
@@ -42,14 +41,14 @@ services:
     tty: true
 
   # PgBouncer transaction pool (dev)
-  pgbouncer_tx:
+  pgbouncer_tx_dev:
     container_name: pgbouncer_tx_dev
     build:
       context: ./pgbouncer
       dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
-      - postgres
+      - postgres_dev
     ports:
       - "${PGB_TX_PORT_DEV}:5432"
     environment:
@@ -70,14 +69,14 @@ services:
     tty: true
 
   # PgBouncer session pool (dev)
-  pgbouncer_sess:
+  pgbouncer_sess_dev:
     container_name: pgbouncer_sess_dev
     build:
       context: ./pgbouncer
       dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
-      - postgres
+      - postgres_dev
     ports:
       - "${PGB_SESS_PORT_DEV}:5432"
     environment:
@@ -98,14 +97,14 @@ services:
     tty: true
 
   # PostgREST (dev)
-  pgrest:
+  pgrest_dev:
     container_name: pgrest_dev
     build:
       context: ./pgrest
       dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
-      - pgbouncer_sess
+      - pgbouncer_sess_dev
     ports:
       - "${PGRST_PORT_DEV:-9000}:3000"
     environment:

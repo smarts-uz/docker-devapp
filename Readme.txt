@@ -64,3 +64,5 @@ docker compose down -v promtail
 docker compose up -d grafana loki otel-collector zipkin postgres_exporter cadvisor prometheus
 
 docker compose -f docker-compose.dev.yml up -d 
+
+docker compose up -d pgrest postgres pgbouncer_sess pgbouncer_tx
