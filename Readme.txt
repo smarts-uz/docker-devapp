@@ -66,3 +66,6 @@ docker compose up -d grafana loki otel-collector zipkin postgres_exporter cadvis
 docker compose -f docker-compose.dev.yml up -d 
 
 docker compose up -d pgrest postgres pgbouncer_sess pgbouncer_tx
+
+
+docker compose up -d opensearch
