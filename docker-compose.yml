@@ -296,8 +296,10 @@ services:
   ### Opensearch ##############################################
 
   opensearch:
-    image: opensearchproject/opensearch:latest
     container_name: opensearch
+    build:
+      context: ./
+      dockerfile: ./opensearch/Dockerfile 
     environment:
       - discovery.type=single-node
       - bootstrap.memory_lock=true

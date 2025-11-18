@@ -38,7 +38,7 @@ docker compose up -d pgrest
 docker compose up -d node-proliga
 
 
-docker compose down postgres-dev -v
+docker compose down postgres -v
 
 docker compose up -d postgres
 
@@ -69,3 +69,5 @@ docker compose up -d pgrest postgres pgbouncer_sess pgbouncer_tx
 
 
 docker compose up -d opensearch
+
+docker compose down -v opensearch
