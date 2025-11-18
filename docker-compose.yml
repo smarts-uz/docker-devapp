@@ -313,7 +313,6 @@ services:
     volumes:
       - opensearch-data:/usr/share/opensearch/data
       # - ./opensearch_backups:/usr/share/opensearch/backups -- enable if you have backups
-      - ./opensearch:/usr/share/opensearch/config
     ports:
       - ${OPENSEARCH_PORT}:9200
       - 9600:9600
