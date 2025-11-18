@@ -300,6 +300,7 @@ services:
     build:
       context: ./
       dockerfile: ./opensearch/Dockerfile 
+    user: root
     environment:
       - discovery.type=single-node
       - bootstrap.memory_lock=true
