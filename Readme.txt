@@ -71,3 +71,7 @@ docker compose up -d pgrest postgres pgbouncer_sess pgbouncer_tx
 docker compose up -d opensearch
 
 docker compose down -v opensearch
+
+docker compose up -d opensearch opensearch-sync
+docker compose down opensearch-sync
+docker compose up -d opensearch-sync

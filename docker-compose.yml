@@ -312,10 +312,27 @@ services:
         hard: -1
     volumes:
       - opensearch-data:/usr/share/opensearch/data
-      # - ./opensearch_backups:/usr/share/opensearch/backups -- enable if you have backups
     ports:
       - ${OPENSEARCH_PORT}:9200
       - 9600:9600
+    networks:
+      - opensearch-net
+
+  ### openserach sync service #############################################
+
+  opensearch-sync:
+    image: teamprodevs/opensearch-sync:2.0
+    container_name: sync-service
+    depends_on:
+      - opensearch
+    environment:
+      - PGUSER=${PG_USER}
+      - PGPASSWORD=${DB_PASSWORD}
+      - PGHOST=host.docker.internal
+      - PGDATABASE=${PG_DB_NAME}
+      - PGPORT=${PG_PORT}
+      - OPENSEARCH_NODE=http://opensearch:${OPENSEARCH_PORT}
+      - TABLES_TO_SYNC=player,club,team,user,match,player_result,player_point
     networks:
       - opensearch-net
 
