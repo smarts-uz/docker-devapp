@@ -1,0 +1,17 @@
+apiKeys:
+  - key: G7!tQz@e9V#pLm2^Xs$kWf
+    roles: [admin]
+    active: true
+
+resourceRoles:
+  - resource: "/v1/rdbms/db/**"
+    method: get
+    roles: [admin]
+  - resource: "/v1/rdbms/db/**"
+    method: post
+    roles: [admin]
+  - resource: "/v1/rdbms/db/**"
+    method: delete
+    roles: [admin]
+
+excludedResources: []

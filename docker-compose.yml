@@ -666,3 +666,28 @@ services:
       - ./pg_exporter/pg_exporter.yml:/etc/pg_exporter.yml # optional custom config
     networks:
       - monitoring
+  db2rest:
+    container_name: db2rest
+    image: teamprodevs/db2rest:2.1
+    ports:
+      - "9300:8080"
+    environment:
+      # === Database ===
+      - DB_URL=jdbc:${LESAAPP_DB_URL}
+      - DB_USER=${LESAAPP_DB_USER}
+      - DB_PASSWORD=${LESAAPP_DB_PASSWORD}
+
+      # === CORS ===
+      - CORS_ENABLED=true
+      - CORS_MAPPING_PATH=/**
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000,https://app.smarts.uz
+      - CORS_ALLOWED_HEADERS=Authorization,Content-Type,ngrok-skip-browser-warning,x-api-key
+      - CORS_ALLOWED_METHODS=GET,POST,PUT,DELETE,OPTIONS
+      - CORS_ALLOW_CREDENTIALS=true
+
+      # === API Key Auth ===
+      - ENABLE_AUTH=true
+      - AUTH_PROVIDER=apiKey
+      - AUTH_DATA_SOURCE=file:///config/auth-config.yml
+    volumes:
+      - ./db2rest/auth-config.yml:/config/auth-config.yml:ro
