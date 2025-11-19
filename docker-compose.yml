@@ -328,7 +328,7 @@ services:
     environment:
       - PGUSER=${PG_USER}
       - PGPASSWORD=${DB_PASSWORD}
-      - PGHOST=host.docker.internal
+      - PGHOST=${HOST_IP}
       - PGDATABASE=${PG_DB_NAME}
       - PGPORT=${PG_PORT}
       - OPENSEARCH_NODE=http://opensearch:${OPENSEARCH_PORT}
