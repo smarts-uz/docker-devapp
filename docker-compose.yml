@@ -321,7 +321,7 @@ services:
   ### openserach sync service #############################################
 
   opensearch-sync:
-    image: teamprodevs/opensearch-sync:2.1
+    image: teamprodevs/opensearch-sync:2.2
     container_name: sync-service
     depends_on:
       - opensearch
