@@ -75,3 +75,8 @@ docker compose down -v opensearch
 docker compose up -d opensearch opensearch-sync
 docker compose down opensearch-sync
 docker compose up -d opensearch-sync
+
+docker compose down opensearch-sync opensearch
+
+docker compose up -d opensearch-sync
+

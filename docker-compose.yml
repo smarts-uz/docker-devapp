@@ -321,10 +321,8 @@ services:
   ### openserach sync service #############################################
 
   opensearch-sync:
-    image: teamprodevs/opensearch-sync:2.2
+    image: teamprodevs/opensearch-sync:2.4
     container_name: sync-service
-    depends_on:
-      - opensearch
     environment:
       - PGUSER=${PG_USER}
       - PGPASSWORD=${DB_PASSWORD}
@@ -333,6 +331,7 @@ services:
       - PGPORT=${PG_PORT}
       - OPENSEARCH_NODE=http://opensearch:${OPENSEARCH_PORT}
       - TABLES_TO_SYNC=player,club,team,user,match,player_result,player_point
+      - PG_LISTEN_CHANNEL=proliga
     networks:
       - opensearch-net
 
