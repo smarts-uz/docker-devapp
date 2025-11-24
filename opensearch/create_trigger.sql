@@ -16,12 +16,6 @@ BEFORE UPDATE ON team
 FOR EACH ROW
 EXECUTE FUNCTION notify__opensearch();
 
--- USER
-CREATE TRIGGER notify__opensearch_user
-BEFORE UPDATE ON "user"   -- user is a reserved word
-FOR EACH ROW
-EXECUTE FUNCTION notify__opensearch();
-
 -- MATCH
 CREATE TRIGGER notify__opensearch_match
 BEFORE UPDATE ON match
