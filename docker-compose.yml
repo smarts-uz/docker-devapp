@@ -321,7 +321,9 @@ services:
   ### openserach sync service #############################################
 
   opensearch-sync:
-    image: teamprodevs/opensearch-sync:2.4
+    build:
+      context: ./
+      dockerfile: ./opensearch-sync/Dockerfile 
     container_name: sync-service
     environment:
       - PGUSER=${PG_USER}
@@ -330,7 +332,7 @@ services:
       - PGDATABASE=${PG_DB_NAME}
       - PGPORT=${PG_PORT}
       - OPENSEARCH_NODE=http://opensearch:${OPENSEARCH_PORT}
-      - TABLES_TO_SYNC=player,club,team,user,match,player_result,player_point
+      - TABLES_TO_SYNC=player,club,team,match,player_result,player_point
       - PG_LISTEN_CHANNEL=proliga
     networks:
       - opensearch-net
