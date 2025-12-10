@@ -692,3 +692,18 @@ services:
       - AUTH_DATA_SOURCE=file:///config/auth-config.yml
     volumes:
       - ./db2rest/auth-config.yml:/config/auth-config.yml:ro
+
+  lesaapp-next:
+    restart: unless-stopped
+    container_name: LesaApp
+    image: teamprodevs/js-lesaapp-next:1.0
+    ports:
+      - "3015:3000"
+    environment:
+      - DB_HOST=185.74.5.34
+      - DB_PORT=3306
+      - DB_USER=lesaappuser
+      - DB_PASSWORD=8ZLVeB0RPRdMMFLbQXIN
+      - DB_NAME=lesaapp
+    volumes:
+      - ./lesaapp-next/static:/app/static
