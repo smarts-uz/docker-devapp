@@ -698,7 +698,7 @@ services:
     container_name: LesaApp
     image: teamprodevs/js-lesaapp-next:1.0
     ports:
-      - "3015:3000"
+      - "3005:3000"
     environment:
       - DB_HOST=185.74.5.34
       - DB_PORT=3306
