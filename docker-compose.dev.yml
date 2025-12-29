@@ -117,6 +117,20 @@ services:
     stdin_open: true
     tty: true
 
+  nginx:
+    container_name: nginx_pgrest
+    image: nginx:latest 
+    restart: unless-stopped
+    ports:
+      - "80:80" # host port
+    volumes:
+      - ./nginx/configs/pgrest.conf:/etc/nginx/nginx.conf:ro
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - pgrest_dev
+    networks:
+      - dev
+
 volumes:
   postgres_dev:
     driver: local
