@@ -1,0 +1,3 @@
+curl --location 'https://ssl.smarts.uz/tour_team' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo1MjUyNSwicm9sZSI6ImF1dGhlbnRpY2F0ZWQiLCJleHAiOjE3NzIwMDIyMzQsImlhdCI6MTc2NjgxODIzNH0.lpnlnmk4kWXGUGmbpFLTQtBFWbMuE4BK4Zn1pPY2J8Q' \
+  --header 'Prefer: count=exact'
