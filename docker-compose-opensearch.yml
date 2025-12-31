@@ -28,20 +28,29 @@ services:
       - 9600:9600
     networks:
       - opensearch-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
-  # opensearch-sync:
-  #   build:
-  #     context: ./
-  #     dockerfile: ./opensearch-sync/Dockerfile
-  #   container_name: opensearch-sync
-  #   environment:
-  #     - PGUSER=${PG_USER}
-  #     - PGPASSWORD=${DB_PASSWORD}
-  #     - PGHOST=${HOST_IP}
-  #     - PGDATABASE=${PG_DB_NAME}
-  #     - PGPORT=${PG_PORT}
-  #     - OPENSEARCH_NODE=http://opensearch:${OPENSEARCH_PORT}
-  #     - TABLES_TO_SYNC=player,club,team,match,player_result,player_point
-  #     - PG_LISTEN_CHANNEL=proliga
-  #   networks:
-  #     - opensearch-net
+  opensearch-syncer:
+    build:
+      context: ./
+      dockerfile: ./opensearch-syncer/Dockerfile
+    container_name: opensearch-syncer
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    environment:
+      - PG_USER=${PG_USER}
+      - PG_PASSWORD=${DB_PASSWORD}
+      - PG_HOST=${HOST_IP}
+      - PG_DATABASE=${PG_DB_NAME}
+      - PG_PORT=${PG_PORT}
+      - OPENSEARCH_NODE=http://opensearch:9200
+      - TABLES_TO_SYNC=player,club,team,match,player_result,player_point
+      - PG_LISTEN_CHANNEL=proliga
+    networks:
+      - opensearch-net

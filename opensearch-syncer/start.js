@@ -8,13 +8,12 @@ import fs from "fs";
 
 const TABLES_TO_SYNC = (process.env.TABLES_TO_SYNC || "")
   .split(",")
-  .map(t => t.trim())
+  .map((t) => t.trim())
   .filter(Boolean);
 
-const LISTEN_CHANNEL =
-  process.env.PG_LISTEN_CHANNEL || "table_changes";
-
+const LISTEN_CHANNEL = process.env.PG_LISTEN_CHANNEL || "table_changes";
 const LAST_SYNC_FILE = "./lastSyncTimes.json";
+const BULK_SIZE = 500;
 
 /* =========================
    CLIENTS
@@ -37,6 +36,8 @@ const osClient = new OSClient({
 ========================= */
 
 let lastSyncTimes = loadLastSyncTimes();
+const syncInProgress = new Set();
+const pendingSync = new Set();
 
 /* =========================
    ENTRY
@@ -64,8 +65,13 @@ async function main() {
 
       if (!TABLES_TO_SYNC.includes(table)) return;
 
-      console.log(`📣 Change detected → ${table}`);
-      await incrementalSync(table);
+      // Debounce: if sync in progress, queue it
+      if (syncInProgress.has(table)) {
+        pendingSync.add(table);
+        return;
+      }
+
+      await runIncrementalSync(table);
     } catch (err) {
       console.error("❌ Notification error:", err);
     }
@@ -85,22 +91,61 @@ main().catch(console.error);
    SYNC LOGIC
 ========================= */
 
+async function runIncrementalSync(table) {
+  syncInProgress.add(table);
+
+  try {
+    await incrementalSync(table);
+  } finally {
+    syncInProgress.delete(table);
+
+    // Process pending if queued during sync
+    if (pendingSync.has(table)) {
+      pendingSync.delete(table);
+      setImmediate(() => runIncrementalSync(table));
+    }
+  }
+}
+
 async function ensureIndexes(tables) {
   for (const table of tables) {
-    await osClient.indices.create(
-      {
-        index: table,
-        body: {
-          mappings: {
-            dynamic: true,
-            properties: {
-              id_str: { type: "keyword" },
+    const exists = await osClient.indices.exists({ index: table });
+    if (exists.body) continue;
+
+    await osClient.indices.create({
+      index: table,
+      body: {
+        settings: {
+          analysis: {
+            analyzer: {
+              translit_analyzer: {
+                tokenizer: "standard",
+                filter: ["lowercase", "russian_translit"],
+              },
+            },
+            filter: {
+              russian_translit: {
+                type: "icu_transform",
+                id: "Any-Latin; Latin-Cyrillic",
+              },
+            },
+          },
+        },
+        mappings: {
+          dynamic: true,
+          properties: {
+            id_str: { type: "keyword" },
+            name: {
+              type: "text",
+              analyzer: "translit_analyzer",
+              search_analyzer: "translit_analyzer",
             },
           },
         },
       },
-      { ignore: [400] }
-    );
+    });
+
+    console.log(`📁 Index created: ${table}`);
   }
 }
 
@@ -112,7 +157,7 @@ async function fullSync(tables) {
       `SELECT * FROM "${table}" WHERE deleted_at IS NULL`
     );
 
-    await indexRows(table, rows);
+    await bulkIndex(table, rows);
     lastSyncTimes[table] = new Date();
   }
 
@@ -130,22 +175,21 @@ async function incrementalSync(table) {
     [since]
   );
 
-  await indexRows(table, updated);
+  if (updated.length) {
+    await bulkIndex(table, updated);
+  }
 
   const { rows: deleted } = await pgPool.query(
     `SELECT id FROM "${table}"
-     WHERE deleted_at IS NOT NULL
-       AND deleted_at > $1`,
+     WHERE deleted_at IS NOT NULL AND deleted_at > $1`,
     [since]
   );
 
-  for (const row of deleted) {
-    await osClient
-      .delete({
-        index: table,
-        id: row.id,
-      })
-      .catch(() => {});
+  if (deleted.length) {
+    await bulkDelete(
+      table,
+      deleted.map((r) => r.id)
+    );
   }
 
   lastSyncTimes[table] = new Date();
@@ -153,42 +197,65 @@ async function incrementalSync(table) {
 }
 
 /* =========================
-   INDEXING
+   BULK OPERATIONS
 ========================= */
 
-async function indexRows(table, rows) {
+async function bulkIndex(table, rows) {
   if (!rows.length) return;
 
-  for (const row of rows) {
-    const body = normalizeRow(row);
-    body.id_str = String(row.id);
+  for (let i = 0; i < rows.length; i += BULK_SIZE) {
+    const chunk = rows.slice(i, i + BULK_SIZE);
+    const body = [];
 
-    await osClient.index({
-      index: table,
-      id: row.id,
-      body,
-    });
+    for (const row of chunk) {
+      const doc = normalizeRow(row);
+      doc.id_str = String(row.id);
+
+      body.push({ index: { _index: table, _id: row.id } });
+      body.push(doc);
+    }
+
+    const { body: result } = await osClient.bulk({ body, refresh: false });
+
+    if (result.errors) {
+      const errors = result.items.filter((item) => item.index?.error);
+      console.error(`⚠️ Bulk errors:`, errors.slice(0, 3));
+    }
   }
 
+  await osClient.indices.refresh({ index: table });
   console.log(`✅ ${rows.length} rows indexed → ${table}`);
+}
+
+async function bulkDelete(table, ids) {
+  if (!ids.length) return;
+
+  const body = ids.map((id) => ({
+    delete: { _index: table, _id: id },
+  }));
+
+  await osClient.bulk({ body, refresh: true });
+  console.log(`🗑️ ${ids.length} rows deleted → ${table}`);
 }
 
 /* =========================
    NORMALIZATION
-   (ignore object / json columns)
 ========================= */
 
 function normalizeRow(row) {
   const result = {};
 
   for (const [key, value] of Object.entries(row)) {
-    if (
-      value === null ||
-      value === undefined ||
-      typeof value === "object"
-    ) {
+    if (value === null || value === undefined) continue;
+
+    // Keep Date objects (convert to ISO string)
+    if (value instanceof Date) {
+      result[key] = value.toISOString();
       continue;
     }
+
+    // Skip other objects (JSON columns)
+    if (typeof value === "object") continue;
 
     if (typeof value === "string") {
       const v = value.trim().toLowerCase();
@@ -209,9 +276,7 @@ function loadLastSyncTimes() {
   try {
     const raw = fs.readFileSync(LAST_SYNC_FILE, "utf8");
     const parsed = JSON.parse(raw);
-    Object.keys(parsed).forEach(
-      k => (parsed[k] = new Date(parsed[k]))
-    );
+    Object.keys(parsed).forEach((k) => (parsed[k] = new Date(parsed[k])));
     return parsed;
   } catch {
     return {};

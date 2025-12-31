@@ -1,5 +1,5 @@
-import fs from 'fs';
-import path from 'path';
+import fs from "fs";
+import path from "path";
 
 function normalizeGeo(geo) {
   if (geo === null || geo === undefined) return null;
@@ -63,39 +63,38 @@ export function normalizeRow(row, schema) {
   return result;
 }
 
-
 // File to store last sync times
-const LAST_SYNC_FILE = path.resolve('./lastSyncTimes.json');
+const LAST_SYNC_FILE = path.resolve("./lastSyncTimes.json");
 
 export function loadLastSyncTimes(TABLES_TO_SYNC) {
   try {
     if (fs.existsSync(LAST_SYNC_FILE)) {
-      const data = fs.readFileSync(LAST_SYNC_FILE, 'utf-8');
+      const data = fs.readFileSync(LAST_SYNC_FILE, "utf-8");
       const parsed = JSON.parse(data);
       // convert strings to Date objects
-      Object.keys(parsed).forEach(key => {
+      Object.keys(parsed).forEach((key) => {
         parsed[key] = new Date(parsed[key]);
       });
       return parsed;
     }
   } catch (err) {
-    console.error('❌ Last sync load error:', err);
+    console.error("❌ Last sync load error:", err);
   }
 
   // default: 1970-01-01
   const defaults = {};
-  TABLES_TO_SYNC.forEach(t => defaults[t] = new Date(0));
+  TABLES_TO_SYNC.forEach((t) => (defaults[t] = new Date(0)));
   return defaults;
 }
 
 export function saveLastSyncTimes(times) {
   try {
     const toSave = {};
-    Object.keys(times).forEach(key => {
+    Object.keys(times).forEach((key) => {
       toSave[key] = times[key].toISOString();
     });
     fs.writeFileSync(LAST_SYNC_FILE, JSON.stringify(toSave, null, 2));
   } catch (err) {
-    console.error('❌ Last sync save error:', err);
+    console.error("❌ Last sync save error:", err);
   }
 }
