@@ -11,7 +11,7 @@ const TABLES_TO_SYNC = (process.env.TABLES_TO_SYNC || "")
   .map((t) => t.trim())
   .filter(Boolean);
 
-const LISTEN_CHANNEL = process.env.PG_LISTEN_CHANNEL || "table_changes";
+const LISTEN_CHANNEL = "table_changes";
 const LAST_SYNC_FILE = "./lastSyncTimes.json";
 const BULK_SIZE = 500;
 
@@ -60,10 +60,31 @@ async function main() {
 
   listener.on("notification", async (msg) => {
     try {
-      const payload = JSON.parse(msg.payload);
-      const table = payload.table;
+      console.log("📩 Notification received:", {
+        channel: msg.channel,
+        payload: msg.payload,
+        payloadLength: msg.payload?.length,
+      });
+      // Validate payload before parsing
+      if (!msg.payload || msg.payload.trim() === "") {
+        console.warn("⚠️ Empty notification payload received");
+        return;
+      }
 
-      if (!TABLES_TO_SYNC.includes(table)) return;
+      let payload;
+      try {
+        payload = JSON.parse(msg.payload);
+      } catch (parseErr) {
+        console.error(
+          "❌ Invalid JSON payload:",
+          msg.payload?.substring(0, 200)
+        );
+        return;
+      }
+
+      const table = payload?.table;
+
+      if (!table || !TABLES_TO_SYNC.includes(table)) return;
 
       // Debounce: if sync in progress, queue it
       if (syncInProgress.has(table)) {

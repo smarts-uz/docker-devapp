@@ -48,9 +48,8 @@ services:
       - PG_PASSWORD=${DB_PASSWORD}
       - PG_HOST=${HOST_IP}
       - PG_DATABASE=${PG_DB_NAME}
-      - PG_PORT=${PG_PORT}
+      - PG_PORT=5445
       - OPENSEARCH_NODE=http://opensearch:9200
       - TABLES_TO_SYNC=player,club,team,match,player_result,player_point
-      - PG_LISTEN_CHANNEL=proliga
     networks:
       - opensearch-net
