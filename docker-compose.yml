@@ -5,9 +5,7 @@ networks:
     driver: bridge
   monitoring:
     driver: bridge
-  dev: 
-    driver: bridge
-  opensearch-net:
+  dev:
     driver: bridge
 
 volumes:
@@ -31,8 +29,7 @@ volumes:
     driver: local
   prometheus-storage:
     driver: local
-  opensearch-data:
-    driver: local
+
 services:
   ### eimzo #########################################
 
@@ -292,50 +289,6 @@ services:
       - backend
     stdin_open: true
     tty: true
-
-  ### Opensearch ##############################################
-
-  opensearch:
-    container_name: opensearch
-    build:
-      context: ./
-      dockerfile: ./opensearch/Dockerfile 
-    environment:
-      - discovery.type=single-node
-      - bootstrap.memory_lock=true
-      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
-      - plugins.security.disabled=true
-      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OPENSEARCH_ADMIN_PASSWORD}
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-    volumes:
-      - opensearch-data:/usr/share/opensearch/data
-    ports:
-      - ${OPENSEARCH_PORT}:9200
-      - 9600:9600
-    networks:
-      - opensearch-net
-
-  ### openserach sync service #############################################
-
-  opensearch-sync:
-    build:
-      context: ./
-      dockerfile: ./opensearch-sync/Dockerfile 
-    container_name: sync-service
-    environment:
-      - PGUSER=${PG_USER}
-      - PGPASSWORD=${DB_PASSWORD}
-      - PGHOST=${HOST_IP}
-      - PGDATABASE=${PG_DB_NAME}
-      - PGPORT=${PG_PORT}
-      - OPENSEARCH_NODE=http://opensearch:${OPENSEARCH_PORT}
-      - TABLES_TO_SYNC=player,club,team,match,player_result,player_point
-      - PG_LISTEN_CHANNEL=proliga
-    networks:
-      - opensearch-net
 
   ### php ##############################################
 

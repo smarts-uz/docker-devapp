@@ -1,4 +1,4 @@
-FROM opensearchproject/opensearch:1.3.9
+FROM opensearchproject/opensearch:3.4.0
 
 # ICU pluginni o'rnatish
 RUN /usr/share/opensearch/bin/opensearch-plugin install --batch analysis-icu
