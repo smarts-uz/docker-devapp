@@ -36,9 +36,7 @@ services:
       start_period: 30s
 
   opensearch-syncer:
-    build:
-      context: ./
-      dockerfile: ./opensearch-syncer/Dockerfile
+    image: teamprodevs/proliga-opensearch-sync:main
     container_name: opensearch-syncer
     depends_on:
       opensearch:
