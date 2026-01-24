@@ -649,7 +649,7 @@ services:
   lesaapp-next:
     restart: unless-stopped
     container_name: LesaApp
-    image: teamprodevs/js-lesaapp-next:1.2
+    image: teamprodevs/js-lesaapp-next:1.3
     ports:
       - "3005:3000"
     environment:
